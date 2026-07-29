@@ -22,7 +22,11 @@ BASE64_IMAGE = 'data:image/png;base64,' + base64.b64encode(
 
 USERS_URL = reverse('users-list')
 ME_URL = reverse('users-me')
+SET_PASSWORD_URL = reverse('users-set-password')
+AVATAR_URL = reverse('users-avatar')
 SUBSCRIPTIONS_URL = reverse('users-subscriptions')
+LOGIN_URL = reverse('login')
+LOGOUT_URL = reverse('logout')
 TAGS_URL = reverse('tags-list')
 INGREDIENTS_URL = reverse('ingredients-list')
 RECIPES_URL = reverse('recipes-list')
@@ -84,6 +88,12 @@ class BaseAPITestCase(APITestCase):
             args=(cls.recipe.id,),
         )
         cls.subscribe_url = reverse('users-subscribe', args=(cls.other.id,))
+        cls.tag_url = reverse('tags-detail', args=(cls.tag.id,))
+        cls.ingredient_url = reverse(
+            'ingredients-detail',
+            args=(cls.product.id,),
+        )
+        cls.author_url = reverse('users-detail', args=(cls.author.id,))
         cls.recipe_data = {
             'ingredients': ({'id': cls.product.id, 'amount': 50},),
             'tags': (cls.tag.id,),

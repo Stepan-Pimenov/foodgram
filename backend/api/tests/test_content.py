@@ -10,7 +10,8 @@ from api.tests.base import (
     TAGS_URL,
     BaseAPITestCase,
 )
-from recipes.models import Favorite, Recipe
+from recipes.models import Favorite, Recipe, ShoppingCart
+from recipes.utils import to_base36
 
 
 class TestContent(BaseAPITestCase):
@@ -84,3 +85,12 @@ class TestContent(BaseAPITestCase):
         response = self.client.get(RECIPES_URL, {'limit': 1})
         self.assertEqual(len(response.data['results']), 1)
         self.assertEqual(response.data['count'], 2)
+
+    def test_is_in_shopping_cart_flag_true_after_adding(self):
+        ShoppingCart.objects.create(user=self.author, recipe=self.recipe)
+        response = self.author_client.get(self.recipe_url)
+        self.assertTrue(response.data['is_in_shopping_cart'])
+
+    def test_short_link_redirects_to_recipe(self):
+        response = self.client.get(f'/s/{to_base36(self.recipe.id)}/')
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)

@@ -1,15 +1,14 @@
-import io
-
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
-from PIL import Image
 
 from recipes.models import Product, Recipe, RecipeProduct, Tag
 
 User = get_user_model()
 
 PASSWORD = 'TestUser2026'
+IMAGES_DIR = settings.BASE_DIR / 'data' / 'images'
 
 ADMIN = {
     'email': 'admin@email.ru',
@@ -26,15 +25,11 @@ USERS = (
 )
 
 RECIPES = (
-    ('Лембас эльфийский', 'Путевой хлеб эльфов.', 15),
-    ('Похлёбка Сэма', 'Сытная еда для долгого пути в Мордор.', 40),
-    ('Синий коктейль с Татуина', 'Освежающий напиток джедая.', 5),
-)
-
-COLORS = (
-    (198, 93, 76),
-    (76, 120, 198),
-    (120, 160, 90),
+    ('Лембас эльфийский', 'Путевой хлеб эльфов.', 15, 'lembas.jpg'),
+    ('Похлёбка Сэма', 'Сытная еда для долгого пути в Мордор.', 40,
+     'pohlebka.jpg'),
+    ('Синий коктейль с Татуина', 'Освежающий напиток джедая.', 5,
+     'cocktail.jpg'),
 )
 
 
@@ -50,9 +45,9 @@ class Command(BaseCommand):
         self.create_admin()
         tags = list(Tag.objects.all())
         products = list(Product.objects.all()[:3])
-        for user_data, recipe_data, color in zip(USERS, RECIPES, COLORS):
+        for user_data, recipe_data in zip(USERS, RECIPES):
             user = self.create_user(*user_data)
-            self.create_recipe(user, recipe_data, tags, products, color)
+            self.create_recipe(user, recipe_data, tags, products)
         self.stdout.write(self.style.SUCCESS('Тестовые данные готовы.'))
 
     def create_admin(self):
@@ -72,27 +67,18 @@ class Command(BaseCommand):
         user.save()
         return user
 
-    def create_recipe(self, author, recipe_data, tags, products, color):
-        if Recipe.objects.filter(author=author).exists():
-            return
-        name, text, cooking_time = recipe_data
-        recipe = Recipe.objects.create(
+    def create_recipe(self, author, recipe_data, tags, products):
+        name, text, cooking_time, image_name = recipe_data
+        recipe, created = Recipe.objects.get_or_create(
             author=author,
             name=name,
-            text=text,
-            cooking_time=cooking_time,
-            image=ContentFile(
-                self.image_bytes(color),
-                name=f'{author.username}.png',
-            ),
+            defaults={'text': text, 'cooking_time': cooking_time},
         )
-        recipe.tags.set(tags[:2])
-        RecipeProduct.objects.bulk_create(
-            RecipeProduct(recipe=recipe, product=product, amount=100)
-            for product in products
-        )
-
-    def image_bytes(self, color):
-        buffer = io.BytesIO()
-        Image.new('RGB', (300, 300), color).save(buffer, format='PNG')
-        return buffer.getvalue()
+        with open(IMAGES_DIR / image_name, 'rb') as image:
+            recipe.image.save(image_name, ContentFile(image.read()))
+        if created:
+            recipe.tags.set(tags[:2])
+            RecipeProduct.objects.bulk_create(
+                RecipeProduct(recipe=recipe, product=product, amount=100)
+                for product in products
+            )

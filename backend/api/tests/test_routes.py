@@ -25,6 +25,9 @@ class TestRoutes(BaseAPITestCase):
             USERS_URL,
             self.recipe_url,
             self.get_link_url,
+            self.tag_url,
+            self.ingredient_url,
+            self.author_url,
         )
         for url in urls:
             with self.subTest(url=url):
