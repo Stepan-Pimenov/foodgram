@@ -67,7 +67,9 @@ docker compose exec backend python manage.py fill_test_data
 
 ## Развёрнутый проект
 
-Адрес: будет добавлен после деплоя на сервер.
+https://foodgram-by-stepan.duckdns.org
+
+Админка: https://foodgram-by-stepan.duckdns.org/admin/
 
 ## Автор
 
