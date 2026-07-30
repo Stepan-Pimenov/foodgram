@@ -16,6 +16,9 @@ from recipes.constants import (
 
 
 class User(AbstractUser):
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
+
     email = models.EmailField(
         'Адрес электронной почты',
         max_length=MAX_EMAIL_LENGTH,
@@ -31,16 +34,13 @@ class User(AbstractUser):
         default=None,
     )
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
-
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
         ordering = ('username',)
 
     def __str__(self):
-        return self.username
+        return self.username[:20]
 
 
 class Subscription(models.Model):
@@ -53,7 +53,7 @@ class Subscription(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='subscribers',
+        related_name='author_subscriptions',
         verbose_name='Автор',
     )
 
@@ -72,7 +72,7 @@ class Subscription(models.Model):
         )
 
     def __str__(self):
-        return f'{self.user} -> {self.author}'
+        return f'{self.user} -> {self.author}'[:20]
 
 
 class Tag(models.Model):
@@ -93,7 +93,7 @@ class Tag(models.Model):
         ordering = ('name',)
 
     def __str__(self):
-        return self.name
+        return self.name[:20]
 
 
 class Product(models.Model):
@@ -119,7 +119,7 @@ class Product(models.Model):
         )
 
     def __str__(self):
-        return f'{self.name}, {self.measurement_unit}'
+        return f'{self.name[:20]}, {self.measurement_unit}'
 
 
 class Recipe(models.Model):
@@ -153,15 +153,9 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         ordering = ('-pub_date',)
-        constraints = (
-            models.CheckConstraint(
-                condition=models.Q(cooking_time__gte=MIN_COOKING_TIME),
-                name='recipe_cooking_time_gte_min',
-            ),
-        )
 
     def __str__(self):
-        return self.name
+        return self.name[:20]
 
 
 class RecipeProduct(models.Model):
@@ -189,10 +183,6 @@ class RecipeProduct(models.Model):
             models.UniqueConstraint(
                 fields=('recipe', 'product'),
                 name='unique_recipe_product',
-            ),
-            models.CheckConstraint(
-                condition=models.Q(amount__gte=MIN_AMOUNT),
-                name='recipe_product_amount_gte_min',
             ),
         )
 
@@ -222,7 +212,7 @@ class UserRecipeRelation(models.Model):
         )
 
     def __str__(self):
-        return f'{self.user} - {self.recipe}'
+        return f'{self._meta.verbose_name}: {self.user} - {self.recipe}'
 
 
 class Favorite(UserRecipeRelation):

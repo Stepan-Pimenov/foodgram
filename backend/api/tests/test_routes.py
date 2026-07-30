@@ -50,6 +50,3 @@ class TestRoutes(BaseAPITestCase):
                     self.author_client.get(url).status_code,
                     OK,
                 )
-
-    def test_api_docs_available(self):
-        self.assertEqual(self.client.get('/api/docs/').status_code, OK)

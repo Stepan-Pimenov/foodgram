@@ -58,7 +58,7 @@ class TestContent(BaseAPITestCase):
         self.author_client.post(self.cart_url)
         response = self.author_client.get(DOWNLOAD_CART_URL)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        content = response.content.decode()
+        content = b''.join(response.streaming_content).decode()
         self.assertIn('Мука', content)
         self.assertIn('100', content)
 
@@ -93,4 +93,7 @@ class TestContent(BaseAPITestCase):
 
     def test_short_link_redirects_to_recipe(self):
         response = self.client.get(f'/s/{to_base36(self.recipe.id)}/')
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(response.status_code, HTTPStatus.MOVED_PERMANENTLY)
+        self.assertTrue(
+            response.url.endswith(f'/recipes/{self.recipe.id}/')
+        )

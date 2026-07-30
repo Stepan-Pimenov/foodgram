@@ -1,29 +1,23 @@
-import base64
 from io import BytesIO
 
 from django.core.files.base import ContentFile
+from drf_extra_fields.fields import Base64ImageField as ExtraBase64ImageField
 from PIL import Image
-from rest_framework import serializers
 
 MAX_IMAGE_SIDE = 1024
 
 
-class Base64ImageField(serializers.ImageField):
-    """Поле картинки: принимает base64 и сжимает картинку."""
+class Base64ImageField(ExtraBase64ImageField):
+    """Base64-поле с уменьшением слишком большой картинки."""
 
     def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            header, imgstr = data.split(';base64,')
-            ext = header.split('/')[-1]
-            data = ContentFile(
-                self.compress(base64.b64decode(imgstr)),
-                name=f'temp.{ext}',
-            )
-        return super().to_internal_value(data)
+        image_file = super().to_internal_value(data)
+        return self.compress(image_file)
 
-    def compress(self, raw):
-        image = Image.open(BytesIO(raw))
+    def compress(self, image_file):
+        image = Image.open(image_file)
+        image_format = image.format or 'PNG'
         image.thumbnail((MAX_IMAGE_SIDE, MAX_IMAGE_SIDE))
         buffer = BytesIO()
-        image.save(buffer, format=image.format or 'PNG', optimize=True)
-        return buffer.getvalue()
+        image.save(buffer, format=image_format, optimize=True)
+        return ContentFile(buffer.getvalue(), name=image_file.name)
