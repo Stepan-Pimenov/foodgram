@@ -1,5 +1,4 @@
 from django.db import transaction
-from django.db.models import Count
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from rest_framework import serializers
 
@@ -65,7 +64,7 @@ class RecipeMinifiedSerializer(serializers.ModelSerializer):
 
 class UserWithRecipesSerializer(UserSerializer):
     recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.IntegerField(read_only=True)
+    recipes_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta(UserSerializer.Meta):
         fields = (*UserSerializer.Meta.fields, 'recipes', 'recipes_count')
@@ -93,11 +92,11 @@ class RecipeProductReadSerializer(serializers.ModelSerializer):
         source='product.measurement_unit',
         read_only=True,
     )
-    amount = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = RecipeProduct
         fields = ('id', 'name', 'measurement_unit', 'amount')
+        read_only_fields = ('amount',)
 
 
 class RecipeReadSerializer(serializers.ModelSerializer):
@@ -234,7 +233,9 @@ class UserRecipeRelationSerializer(serializers.ModelSerializer):
             user=data['user'],
             recipe=data['recipe'],
         ).exists():
-            raise serializers.ValidationError('Рецепт уже в списке.')
+            raise serializers.ValidationError(
+                f'{self.Meta.model._meta.verbose_name}: рецепт уже добавлен.'
+            )
         return data
 
     def to_representation(self, relation):
@@ -271,7 +272,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return data
 
     def to_representation(self, subscription):
-        author = User.objects.annotate(
-            recipes_count=Count('recipes'),
-        ).get(pk=subscription.author_id)
-        return UserWithRecipesSerializer(author, context=self.context).data
+        return UserWithRecipesSerializer(
+            subscription.author,
+            context=self.context,
+        ).data

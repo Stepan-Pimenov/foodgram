@@ -8,6 +8,7 @@ from recipes.constants import (
     MAX_NAME_LENGTH,
     MAX_PRODUCT_NAME_LENGTH,
     MAX_RECIPE_NAME_LENGTH,
+    MAX_STR_LENGTH,
     MAX_TAG_NAME_LENGTH,
     MAX_TAG_SLUG_LENGTH,
     MIN_AMOUNT,
@@ -40,7 +41,7 @@ class User(AbstractUser):
         ordering = ('username',)
 
     def __str__(self):
-        return self.username[:20]
+        return self.username[:MAX_STR_LENGTH]
 
 
 class Subscription(models.Model):
@@ -53,7 +54,7 @@ class Subscription(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='author_subscriptions',
+        related_name='subscriptions_to_author',
         verbose_name='Автор',
     )
 
@@ -72,7 +73,7 @@ class Subscription(models.Model):
         )
 
     def __str__(self):
-        return f'{self.user} -> {self.author}'[:20]
+        return f'{self.user} -> {self.author}'[:MAX_STR_LENGTH]
 
 
 class Tag(models.Model):
@@ -93,7 +94,7 @@ class Tag(models.Model):
         ordering = ('name',)
 
     def __str__(self):
-        return self.name[:20]
+        return self.name[:MAX_STR_LENGTH]
 
 
 class Product(models.Model):
@@ -119,7 +120,7 @@ class Product(models.Model):
         )
 
     def __str__(self):
-        return f'{self.name[:20]}, {self.measurement_unit}'
+        return f'{self.name[:MAX_STR_LENGTH]}, {self.measurement_unit}'
 
 
 class Recipe(models.Model):
@@ -155,7 +156,7 @@ class Recipe(models.Model):
         ordering = ('-pub_date',)
 
     def __str__(self):
-        return self.name[:20]
+        return self.name[:MAX_STR_LENGTH]
 
 
 class RecipeProduct(models.Model):

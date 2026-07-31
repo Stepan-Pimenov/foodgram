@@ -116,12 +116,10 @@ class RecipeViewSet(ModelViewSet):
             user=request.user,
             recipe_id=pk,
         ).delete()
-        if not deleted:
-            return Response(
-                {'errors': 'Рецепта не было в списке.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            status=status.HTTP_204_NO_CONTENT if deleted
+            else status.HTTP_400_BAD_REQUEST
+        )
 
     @action(
         detail=True,
@@ -188,7 +186,10 @@ class UserViewSet(DjoserUserViewSet):
 
     @action(detail=False, permission_classes=(IsAuthenticated,))
     def me(self, request):
-        serializer = self.get_serializer(request.user)
+        serializer = self.get_serializer(
+            request.user,
+            context={'request': request},
+        )
         return Response(serializer.data)
 
     @action(
@@ -211,7 +212,7 @@ class UserViewSet(DjoserUserViewSet):
     @action(detail=False, permission_classes=(IsAuthenticated,))
     def subscriptions(self, request):
         authors = User.objects.filter(
-            author_subscriptions__user=request.user,
+            subscriptions_to_author__user=request.user,
         ).annotate(recipes_count=Count('recipes')).order_by('username')
         page = self.paginate_queryset(authors)
         serializer = UserWithRecipesSerializer(
@@ -238,9 +239,7 @@ class UserViewSet(DjoserUserViewSet):
     @subscribe.mapping.delete
     def unsubscribe(self, request, id=None):
         deleted, _ = request.user.subscriptions.filter(author_id=id).delete()
-        if not deleted:
-            return Response(
-                {'errors': 'Вы не были подписаны на этого пользователя.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            status=status.HTTP_204_NO_CONTENT if deleted
+            else status.HTTP_400_BAD_REQUEST
+        )
